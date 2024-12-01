@@ -1,0 +1,13 @@
+{
+  "configurations": [
+    {
+      "cwd": "${workspaceFolder}",
+      "executable": "./build/stm32l011-debug/bin/blink.elf",
+      "name": "Debug with ST-Link",
+      "request": "launch",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "stutil"
+    }
+  ]
+}

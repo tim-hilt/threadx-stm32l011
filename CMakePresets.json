@@ -1,0 +1,27 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "stm32l011-debug",
+      "displayName": "STM32L011 Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/stm32l011-toolchain.cmake",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/${presetName}/bin"
+      }
+    },
+    {
+      "name": "stm32l011-release",
+      "displayName": "STM32L011 Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/stm32l011-toolchain.cmake",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/${presetName}/bin"
+      }
+    }
+  ]
+}
