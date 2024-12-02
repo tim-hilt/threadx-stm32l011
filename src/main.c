@@ -12,9 +12,6 @@ void main(void) {
   tx_kernel_enter();
 }
 
-void toggle_on(uint32_t);
-void toggle_off(uint32_t);
-
 void init_leds() {
   RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
   GPIOB->MODER ^= GPIO_MODER_MODE3_1;
@@ -22,6 +19,9 @@ void init_leds() {
 
 TX_THREAD toggle_on_thread;
 TX_THREAD toggle_off_thread;
+
+void toggle_on(uint32_t);
+void toggle_off(uint32_t);
 
 void tx_application_define(void* first_unused_memory) {
   static char thread_name_toggle_on[] = "toggle_on";
@@ -36,7 +36,6 @@ void tx_application_define(void* first_unused_memory) {
       3,
       TX_NO_TIME_SLICE,
       TX_AUTO_START);
-
   static char thread_name_toggle_off[] = "toggle_off";
   static char toggle_off_stack[128];
   tx_thread_create(&toggle_off_thread,
@@ -54,13 +53,14 @@ void tx_application_define(void* first_unused_memory) {
 void toggle_on(uint32_t thread_input) {
   while (1) {
     GPIOB->BSRR = GPIO_BSRR_BS_3;
-    tx_thread_sleep(1000);
+    tx_thread_sleep(20);
   }
 }
 
 void toggle_off(uint32_t thread_input) {
   while (1) {
-    tx_thread_sleep(1000);
+    tx_thread_sleep(10);
     GPIOB->BSRR = GPIO_BSRR_BR_3;
+    tx_thread_sleep(10);
   }
 }
