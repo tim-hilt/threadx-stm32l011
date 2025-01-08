@@ -6,14 +6,16 @@
 TX_THREAD toggle_on_thread;
 TX_THREAD toggle_off_thread;
 
+void init_uart(void);
 void init_leds(void);
 void toggle_on(uint32_t);
 void toggle_off(uint32_t);
 void increase_clock_speed(void);
 
 int main(void) {
-  increase_clock_speed();
   init_leds();
+  init_uart();
+  increase_clock_speed();
   tx_kernel_enter();
 }
 
@@ -37,6 +39,37 @@ void increase_clock_speed(void) {
 void init_leds(void) {
   RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
   GPIOB->MODER ^= GPIO_MODER_MODE3_1;
+}
+
+void init_uart(void) {
+  RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+  GPIOA->MODER &= ~(GPIO_MODER_MODE2_Msk | GPIO_MODER_MODE15_Msk);
+  GPIOA->MODER |=
+      (0b10 << GPIO_MODER_MODE2_Pos) | (0b10 << GPIO_MODER_MODE15_Pos);
+
+  GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL2_Msk;
+  GPIOA->AFR[0] |= 4U << GPIO_AFRL_AFSEL2_Pos;
+
+  GPIOA->AFR[1] &= ~GPIO_AFRH_AFSEL15_Msk;
+  GPIOA->AFR[1] |= 4U << GPIO_AFRH_AFSEL15_Pos;
+
+  RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+
+  RCC->CCIPR &= ~RCC_CCIPR_USART2SEL_Msk;
+
+  // baudrate = CLK / BRR -> 32MHz / 278 = 115200
+  USART2->BRR = 278U;
+
+  USART2->CR1 |= USART_CR1_TE | USART_CR1_RE;
+  USART2->CR1 |= USART_CR1_UE;
+}
+
+void print(const char* str) {
+  while (*str) {
+    while (!(USART2->ISR & USART_ISR_TXE));
+    USART2->TDR = *str++;
+  }
 }
 
 void tx_application_define(void* first_unused_memory) {
@@ -69,6 +102,7 @@ void tx_application_define(void* first_unused_memory) {
 void toggle_on(uint32_t thread_input) {
   while (1) {
     GPIOB->BSRR = GPIO_BSRR_BS_3;
+    print("on\n");
     tx_thread_sleep(1000);
   }
 }
@@ -77,6 +111,7 @@ void toggle_off(uint32_t thread_input) {
   while (1) {
     tx_thread_sleep(500);
     GPIOB->BSRR = GPIO_BSRR_BR_3;
+    print("off\n");
     tx_thread_sleep(500);
   }
 }
