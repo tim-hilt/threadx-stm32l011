@@ -6,6 +6,8 @@
 TX_THREAD toggle_on_thread;
 TX_THREAD toggle_off_thread;
 
+uint8_t buffer[32];
+
 void init_uart(void);
 void init_leds(void);
 void toggle_on(uint32_t);
@@ -44,32 +46,43 @@ void init_leds(void) {
 void init_uart(void) {
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
-  GPIOA->MODER &= ~(GPIO_MODER_MODE2_Msk | GPIO_MODER_MODE15_Msk);
-  GPIOA->MODER |=
-      (0b10 << GPIO_MODER_MODE2_Pos) | (0b10 << GPIO_MODER_MODE15_Pos);
+  GPIOA->MODER &= ~GPIO_MODER_MODE2_Msk;
+  GPIOA->MODER |= 0b10 << GPIO_MODER_MODE2_Pos;
 
   GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL2_Msk;
   GPIOA->AFR[0] |= 4U << GPIO_AFRL_AFSEL2_Pos;
 
-  GPIOA->AFR[1] &= ~GPIO_AFRH_AFSEL15_Msk;
-  GPIOA->AFR[1] |= 4U << GPIO_AFRH_AFSEL15_Pos;
+  RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+
+  DMA1_CSELR->CSELR = 4 << DMA_CSELR_C4S_Pos;
+  DMA1_Channel4->CPAR = (uint32_t)&USART2->TDR;
+  DMA1_Channel4->CMAR = (uint32_t)buffer;
+  DMA1_Channel4->CCR = DMA_CCR_MINC | DMA_CCR_DIR;
 
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
   RCC->CCIPR &= ~RCC_CCIPR_USART2SEL_Msk;
 
-  // baudrate = CLK / BRR -> 32MHz / 278 = 115200
-  USART2->BRR = 278U;
+  USART2->BRR = 32000000 / 115200;
 
-  USART2->CR1 |= USART_CR1_TE | USART_CR1_RE;
-  USART2->CR1 |= USART_CR1_UE;
+  USART2->CR3 = USART_CR3_DMAT;
+
+  USART2->CR1 |= USART_CR1_TE | USART_CR1_UE;
 }
 
 void print(const char* str) {
-  while (*str) {
-    while (!(USART2->ISR & USART_ISR_TXE));
-    USART2->TDR = *str++;
+  if (strlen(str) > sizeof(buffer)) {
+    return;
   }
+  for (int i = 0; i < strlen(str); i++) {
+    buffer[i] = str[i];
+  }
+  DMA1_Channel4->CCR &= ~DMA_CCR_EN;
+  DMA1_Channel4->CNDTR = strlen(str);
+  DMA1_Channel4->CCR |= DMA_CCR_EN;
+
+  while (!(DMA1->ISR & DMA_ISR_TCIF4));
+  DMA1->IFCR = DMA_IFCR_CTCIF4;
 }
 
 void tx_application_define(void* first_unused_memory) {
