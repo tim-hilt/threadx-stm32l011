@@ -169,10 +169,12 @@ void toggle_on(uint32_t thread_input) {
   }
 }
 
+#define UINT32_DIVISOR 1000000000U
+
 void toggle_off(uint32_t thread_input) {
   uint32_t data;
   char c[1];
-  uint32_t divisor = 1000000000U;
+  uint32_t divisor = UINT32_DIVISOR;
 
   while (1) {
     tx_thread_sleep(500);
@@ -187,7 +189,7 @@ void toggle_off(uint32_t thread_input) {
       divisor /= 10;
     }
     print("\n");
-    divisor = 1000000000U;
+    divisor = UINT32_DIVISOR;
 
     tx_thread_sleep(500);
   }
