@@ -133,6 +133,16 @@ void print(const char* str) {
   DMA1->IFCR = DMA_IFCR_CTCIF4;
 }
 
+void print_char(char str) {
+  buffer[0] = str;
+  DMA1_Channel4->CCR &= ~DMA_CCR_EN;
+  DMA1_Channel4->CNDTR = 1;
+  DMA1_Channel4->CCR |= DMA_CCR_EN;
+
+  while (!(DMA1->ISR & DMA_ISR_TCIF4));
+  DMA1->IFCR = DMA_IFCR_CTCIF4;
+}
+
 void tx_application_define(void* first_unused_memory) {
   static char thread_name_toggle_on[] = "toggle_on";
   static char toggle_on_stack[128];
@@ -173,7 +183,6 @@ void toggle_on(uint32_t thread_input) {
 
 void toggle_off(uint32_t thread_input) {
   uint32_t data;
-  char c[1];
   uint32_t divisor = UINT32_DIVISOR;
 
   while (1) {
@@ -184,11 +193,10 @@ void toggle_off(uint32_t thread_input) {
     data = *((uint32_t*)&_edata);
 
     while (divisor > 0) {
-      c[0] = '0' + ((data / divisor) % 10);
-      print(c);
+      print_char('0' + ((data / divisor) % 10));
       divisor /= 10;
     }
-    print("\n");
+    print_char('\n');
     divisor = UINT32_DIVISOR;
 
     tx_thread_sleep(500);
